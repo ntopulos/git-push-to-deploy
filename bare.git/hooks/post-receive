@@ -1,0 +1,18 @@
+#!/bin/sh
+
+# Load config
+. $( pwd -P )"/deploy-config.sh"
+
+# Define live repository
+live_repo_path=$( pwd -P )"/"$live_repo_relative_path
+
+echo "Pulling from bare to live..."
+
+cd $live_repo_path
+env -i git reset --hard HEAD --quiet
+env -i git pull bare master --quiet
+
+echo "Done"
+echo
+
+# Add your deploy scripts below
