@@ -27,32 +27,28 @@ live_repo_path=$( pwd -P )"/"$live_repo_relative_path
 # Get live repository status
 git_live_status=$(cd $live_repo_path ; env -i git status --porcelain)
 
-if [ "$GIT_PUSH_OPTION_0" = "from_live" ]; then
+if [ -z "$git_live_status" ]; then
+    # This condition will also fire on nested push from live, we cannot
+    # establish origin without --push-option.
+    # (unavailable on older versions of git)
     echo
-	echo "Push from live: accepted unconditionally."
+    echo "Live repository clean, push accepted."
 else
-    # Normal push, some verifications needed
+    echo
+    echo "Live repository not clean, updating live."
+    echo "Pushing from live to bare..."
 
-    if [ -z "$git_live_status" ]; then
-        echo
-        echo "Live repository clean, push accepted."
-    else
-        echo
-        echo "Live repository not clean, updating live."
-        echo "Pushing from live to bare..."
+    # Commiting live changes in live repository
+    # --author option on commit doesn't work, using -c
+    cd $live_repo_path
+    env -i git add -A
+    env -i git -c user.email="$user_email" -c user.name="$user_name" commit -m "[autocommit]" --quiet
+    env -i git push bare master --quiet
 
-        # Commiting live changes in live repository
-        # --author option on commit doesn't work, using -c
-        cd $live_repo_path
-        env -i git add -A
-        env -i git -c user.email="$user_email" -c user.name="$user_name" commit -m "[autocommit]" --quiet
-        env -i git push bare master --push-option="from_live" --quiet
-
-        echo "Done"
-        echo
-        echo "Remote contains work that you do not have locally."
-        echo "Pull before pushing again."
-        echo
-        exit 1
-    fi
+    echo "Done"
+    echo
+    echo "Remote contains work that you do not have locally."
+    echo "Pull before pushing again."
+    echo
+    exit 1
 fi
